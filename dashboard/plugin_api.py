@@ -289,22 +289,22 @@ def _mint_for(profile: str | None, voice: str, allow_chat: bool = True, language
                 "small talk directly yourself. When they ask for REAL WORK (doing, creating, reviewing, "
                 "searching their information, or taking action), call send_to_chat with the complete "
                 "request phrased naturally in their language. The system sends it to their open chat, "
-                "where the real agent replies. You will then receive the result; read or summarize it "
-                "aloud naturally in no more than 2-3 sentences. If no chat is open, the tool will tell you."
+                "where the real agent replies. You will then receive the result; relay it as the "
+                "delegation policy describes. If no chat is open, the tool will tell you."
             ) if language == "en" else (
                 "\n\nSPRACHE + CHAT: Der Nutzer hat einen Chat in der App geöffnet. Beantworte einfache Fragen und "
                 "Smalltalk selbst. Wenn der Nutzer echte Arbeit verlangt (etwas erledigen, erstellen, prüfen, "
                 "Informationen suchen oder handeln), rufe send_to_chat mit der vollständigen Anfrage in seiner "
                 "Sprache auf. Das System sendet sie an den geöffneten Chat, wo der eigentliche Agent antwortet. "
-                "Lies das Ergebnis anschließend natürlich in höchstens 2–3 Sätzen vor. Falls kein Chat geöffnet ist, "
+                "Gib das Ergebnis anschließend so weiter, wie es die Delegationsrichtlinie beschreibt. Falls kein Chat geöffnet ist, "
                 "weist dich das Tool darauf hin."
             ) if language == "de" else (
                 "\n\nVOZ + CHAT: el usuario tiene un chat abierto en la aplicaci\u00f3n. Para conversaci\u00f3n "
                 "r\u00e1pida, preguntas simples o charla, responde T\u00da directo. Cuando pida TRABAJO REAL "
                 "(hacer, crear, revisar, buscar en sus cosas, actuar sobre algo), llama a send_to_chat con la "
                 "petici\u00f3n completa y natural en su idioma: el sistema la env\u00eda a su chat abierto, el "
-                "agente real responde all\u00ed, y luego recibir\u00e1s el resultado \u2014 l\u00e9elo o "
-                "res\u00famelo en voz alta con naturalidad, m\u00e1ximo 2-3 frases. Si no hay chat abierto, "
+                "agente real responde all\u00ed, y luego recibir\u00e1s el resultado \u2014 transm\u00edtelo como "
+                "indica la pol\u00edtica de delegaci\u00f3n. Si no hay chat abierto, "
                 "la herramienta te lo dir\u00e1."
             )
         )
