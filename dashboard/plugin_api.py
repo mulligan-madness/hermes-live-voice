@@ -902,13 +902,11 @@ def _cl_ensure() -> None:
 
 def _codexlive_persona(profile: str | None, language: str = "en") -> str:
     language = _normalize_language(language)
-    if profile:
-        sections = _bot_identity_sections(profile)
-        name = _bot_display_name(profile)
-    else:
-        sections = talk_host.host().identity_sections()
-        name = _host_bot_name()
-    base = talk_identity.build_instructions(sections, tools=[], lane="dashboard")
+    name = _bot_display_name(profile) if profile else _host_bot_name()
+    # The Codex live voice only relays the chat agent's work: no tools, no identity sections.
+    base = (talk_identity.VOICE_OPENING
+            + "Do not narrate progress you cannot see, and never report a result you have not "
+            "actually been given.\n\n" + talk_identity.current_moment())
     if profile and "You are Hermes, speaking live" in base:
         base = base.replace("You are Hermes, speaking live", f"You are {name}, speaking live", 1)
     base += _language_directive(language)

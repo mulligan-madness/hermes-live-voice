@@ -124,7 +124,7 @@ def test_constructed_voice_prompts(profile, allow_chat, language):
     assert ({'en': 'IDENTITY: You are ', 'de': 'IDENTITÄT: Du bist '}.get(language or 'en', 'IDENTIDAD: eres ') + ('Example Bot' if profile else 'Host Bot')) in prompt
     if language == 'de':
         assert '\n\nIDENTITÄT: Du bist ' in prompt
-    assert all(text in prompt for text in sections.values())
+    assert not any(text in prompt for text in sections.values())
 
 
 @pytest.mark.parametrize('mode', ['client', 'server'])
