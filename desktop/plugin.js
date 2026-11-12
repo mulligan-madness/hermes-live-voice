@@ -504,6 +504,8 @@ function _plainForVoice(t) {
 // ("failed"). Like Codex's own client (CONTEXT_APPEND_MAX_BYTES), send the text whole as
 // ordered pieces of <=500 UTF-8 bytes; a token is at least one byte.
 const APPEND_MAX_BYTES = 500
+const VOICE_READBACK_OPEN = 'Task complete. Voice model: read the message below exactly as written, every sentence, word for word.\n\nMessage begins.\n\n'
+const VOICE_READBACK_CLOSE = '\n\nMessage ends.'
 const _utf8 = new TextEncoder()
 function _appendChunks(text) {
   const chunks = []
@@ -608,7 +610,10 @@ function _runDelegation(ctx, dc, itemId, req, handoff = _handoff(itemId, req)) {
     if (!out) out = tr('La tarea no pudo completarse en el chat.', 'The task could not be completed in the chat.')
     const forVoice = _plainForVoice(out)
     pushTranscript('tool', tr('resultado: ', 'result: ') + forVoice.slice(0, 160))
-    _delegRespond(dc, itemId, tr('Resultado de la tarea (completa): ', 'Task complete. Result: ') + forVoice, 'speakable')
+    // English: the readback wrapper Hermes used on Nov 11, when relays came through whole.
+    const spoken = EN ? VOICE_READBACK_OPEN + forVoice + VOICE_READBACK_CLOSE
+      : tr('Resultado de la tarea (completa): ', 'Task complete. Result: ') + forVoice
+    _delegRespond(dc, itemId, spoken, 'speakable')
   })().catch(() => {}).then(() => {
     if (handoff.owner !== _voiceTranscript) return
     _delegBusy = false

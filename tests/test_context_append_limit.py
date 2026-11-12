@@ -52,7 +52,7 @@ DELEGATION
   }
   const joined = ch => appends.filter(f => f.channel === ch).map(f => f.content[0].text).join('');
   assert.equal(joined('commentary'), interim + '\n\nNot done yet.');
-  assert.equal(joined('speakable'), 'Task complete. Result: ' + longText);
+  assert.equal(joined('speakable'), VOICE_READBACK_OPEN + longText + VOICE_READBACK_CLOSE);
 })().catch(e => { console.error(e); process.exitCode = 1; });
 '''.replace('DELEGATION', delegation)
     result = subprocess.run(['node', '-e', script], capture_output=True, text=True, timeout=10)

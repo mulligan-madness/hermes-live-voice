@@ -284,13 +284,13 @@ DELEGATION
   _runDelegation(ctx, dc, 'current', 'revisa');
   await flush();
   assert.match(lastText(), (EN ? /^The queued task went stale/ : /^La tarea en cola quedó obsoleta/));
-  assert.ok(messages.some(m => m.content?.[0]?.text === tr('Resultado de la tarea (completa): ', 'Task complete. Result: ') + completion && m.channel === 'speakable'));
+  assert.ok(messages.some(m => m.content?.[0]?.text === (EN ? VOICE_READBACK_OPEN + completion + VOICE_READBACK_CLOSE : tr('Resultado de la tarea (completa): ', 'Task complete. Result: ') + completion) && m.channel === 'speakable'));
   assert.equal(_plainForVoice('Texto español. ```codigo```'), tr('Texto español.  (bloque de código omitido)', 'Texto español.  (code block omitted)'));
   const realDelegate = delegateToChat;
   delegateToChat = async () => '';
   _runDelegation(ctx, dc, 'empty', 'revisa');
   await flush();
-  assert.equal(lastText(), tr('Resultado de la tarea (completa): La tarea no pudo completarse en el chat.', 'Task complete. Result: The task could not be completed in the chat.'));
+  assert.equal(lastText(), EN ? VOICE_READBACK_OPEN + 'The task could not be completed in the chat.' + VOICE_READBACK_CLOSE : tr('Resultado de la tarea (completa): La tarea no pudo completarse en el chat.', 'Task complete. Result: The task could not be completed in the chat.'));
   delegateToChat = realDelegate;
   // Preview prompt construction and both outbound formats; no media APIs run.
   for (const eng of ['codex', 'realtime']) {
