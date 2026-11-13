@@ -51,9 +51,46 @@ DELEGATION
     assert.ok(bytes <= 500, 'append of ' + bytes + ' bytes exceeds the 500-token wire limit');
   }
   const joined = ch => appends.filter(f => f.channel === ch).map(f => f.content[0].text).join('');
-  assert.equal(joined('commentary'), interim + '\n\nNot done yet.');
+  // Interim messages go with no channel (speakable on the wire), as Codex sends them.
+  assert.equal(joined(undefined), interim + '\n\nNot done yet.');
+  assert.equal(joined('commentary'), '');
   assert.equal(joined('speakable'), VOICE_READBACK_OPEN + longText + VOICE_READBACK_CLOSE);
 })().catch(e => { console.error(e); process.exitCode = 1; });
+'''.replace('DELEGATION', delegation)
+    result = subprocess.run(['node', '-e', script], capture_output=True, text=True, timeout=10)
+    assert result.returncode == 0, result.stderr
+
+
+def test_call_interims_from_turns_the_voice_did_not_start_reach_the_voice():
+    source = (REPO / 'desktop/plugin.js').read_text()
+    delegation = source[source.index('const _voiceNote ='):source.index('// ── Barge-in')]
+    script = r'''
+const assert = require('node:assert/strict');
+const EN = true;
+const tr = (es, en) => EN ? en : es;
+let _delegating = null, _delegBusy = false, _delegQueue = null, _delegSid = '';
+let handoffMode = 'client';
+const transcript = [], pushTranscript = () => {}, KEY_CHAT = 'chat';
+const sleep = async () => {};
+const handlers = {};
+const host = {state: {focusedSessionId: 'chat-1'}, onEvent: (name, cb) => {
+  handlers[name] = cb; return () => { delete handlers[name]; };
+}};
+const frames = [];
+const dc = {send: data => frames.push(JSON.parse(data))};
+DELEGATION
+const stop = _watchCallInterims(dc);
+handlers['message.interim']({session_id: 'chat-1', text: 'The **sign-in** worked; approving the policy next.'});
+handlers['message.interim']({session_id: 'other-chat', text: 'not this call'});
+_delegating = {text: 'voice request', at: Date.now()};
+handlers['message.interim']({session_id: 'chat-1', text: 'owned by the voice request'});
+_delegating = null;
+assert.equal(frames.length, 1);
+assert.equal(frames[0].type, 'session.context.append');
+assert.equal(frames[0].channel, undefined);
+assert.equal(frames[0].content[0].text, 'The sign-in worked; approving the policy next.\n\nNot done yet.');
+stop();
+assert.equal(handlers['message.interim'], undefined);
 '''.replace('DELEGATION', delegation)
     result = subprocess.run(['node', '-e', script], capture_output=True, text=True, timeout=10)
     assert result.returncode == 0, result.stderr

@@ -405,12 +405,13 @@ async function delegateToChat(text, onProgress, handoff = null) {
           if (!name || name === lastTool) return
           lastTool = name
           const ctxTxt = String(pl.context || '').trim().slice(0, 120)
-          onProgress('Hermes is working: ' + name + (ctxTxt ? ' (' + ctxTxt + ')' : '') + '. Not done yet.')
+          onProgress('Hermes is working: ' + name + (ctxTxt ? ' (' + ctxTxt + ')' : '') + '. Not done yet.', 'commentary')
         }))
         unsubs.push(host.onEvent('message.interim', ev => {
           if (settled || !same(ev) || typeof onProgress !== 'function') return
           const t = evText(ev).trim()
-          if (t) onProgress(t + '\n\nNot done yet.')
+          // No channel: the wire default is speakable, as Codex sends its agent's mid-turn messages.
+          if (t) onProgress(t + '\n\nNot done yet.', null)
         }))
         unsubs.push(host.onEvent('message.complete', ev => {
           if (settled || !same(ev)) return
@@ -530,6 +531,29 @@ function _delegRespond(dc, itemId, text, channel) {
   } catch {}
 }
 
+// Interim messages from chat turns the voice did not start (e.g. typed during the call), sent as
+// session context with no channel so the voice speaks them, as it does inside a delegation.
+function _sessionRespond(dc, text) {
+  try {
+    for (const piece of _appendChunks(text)) {
+      dc.send(JSON.stringify({ type: 'session.context.append', content: [{ type: 'input_text', text: piece }] }))
+    }
+  } catch {}
+}
+function _watchCallInterims(dc) {
+  if (!host || typeof host.onEvent !== 'function') return () => {}
+  const owner = _voiceTranscript
+  return host.onEvent('message.interim', ev => {
+    if (owner !== _voiceTranscript || _delegating) return
+    const pl = (ev && ev.payload) || {}
+    const es = String((ev && (ev.session_id ?? ev.sessionId)) ?? pl.session_id ?? pl.sessionId ?? '')
+    const callSid = owner.sid || _focusedChat()
+    if (!callSid || (es && es !== callSid)) return
+    const t = String((ev && (ev.text ?? ev.display)) ?? pl.text ?? pl.display ?? '').trim()
+    if (t) _sessionRespond(dc, _plainForVoice(t) + '\n\nNot done yet.')
+  })
+}
+
 function handleDelegation(ctx, msg, dc) {
   const item = (msg && msg.item) || {}
   const itemId = String(item.id || '')
@@ -603,7 +627,7 @@ function _runDelegation(ctx, dc, itemId, req, handoff = _handoff(itemId, req)) {
   _delegBusy = true
   ;(async () => {
     let out = ''
-    try { out = await delegateToChat(req, txt => _delegRespond(dc, itemId, _plainForVoice(txt), 'commentary'), handoff) } catch (e) { out = '' }
+    try { out = await delegateToChat(req, (txt, channel = 'commentary') => _delegRespond(dc, itemId, _plainForVoice(txt), channel), handoff) } catch (e) { out = '' }
     if (handoff.owner !== _voiceTranscript) return
     if (handoff.state !== 'accepted') handoff.state = 'failed'
     out = String(out || '').trim()
@@ -843,6 +867,8 @@ async function startLive(ctx, { profile, voice, micId, outId, engine, log }) {
     try { msg = JSON.parse(ev.data) } catch { return }
     handleRealtimeEvent(msg, dc, ctx)
   }
+  let stopCallInterims = () => {}
+  if (eng === 'codex') { try { stopCallInterims = _watchCallInterims(dc) } catch {} }
 
   let audioEl = null
   pc.ontrack = ev => {
@@ -1000,6 +1026,7 @@ async function startLive(ctx, { profile, voice, micId, outId, engine, log }) {
   ctl.close = () => {
     if (closed) return
     closed = true
+    try { stopCallInterims() } catch {}
     if (bus.stage === 'connected') playChime('hangup')
     try { clearInterval(statsTimer) } catch {}
     try { clearInterval(idleTimer) } catch {}
